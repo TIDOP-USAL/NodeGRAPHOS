@@ -1,0 +1,77 @@
+{
+    "--project-path": {
+      "metavar": "<path>",
+      "help": "Path to the project folder."
+    },
+    "--gcp": {
+      "default": "None",
+      "metavar": "<path>",
+      "help": "Path to the files containing the ground control points used for georeferencing. Default: None"
+    },
+    "--max-concurrency": {
+      "default": "4",
+      "type": "<type 'int'>",
+      "metavar": "<positive integer>",
+      "help": "The maximum number of cores to use in processing. Default: 4"
+    },
+    "--resize-to": {
+      "default": "800",
+      "type": "<type 'int'>",
+      "metavar": "<positive integer>",
+      "help": "Scale image width for tie-point extraction. Default: 800"
+    },
+    "--zoom": {
+      "default": "4",
+      "type": "<type 'int'>",
+      "metavar": "<positive integer>",
+      "help": "The level of DEM construction. 4 means 4x native GSD. Default: 4 Values: 1, 2, 4, 8"
+    },
+    "--matcher-distance": {
+      "metavar": "<positive integer>",
+      "help": "Distance threshold in meters to find pre-matching images based on GPS exif data."
+    },
+    "--multi-scale":{
+      "action":"store_true",
+      "default":"False",
+      "help":"Uses an image file pair based multi-scale tie-point generation routine similar to Photoscan."
+    },
+    "--remove-ortho-tiles":{
+      "action":"store_true",
+      "default":"False",
+      "help":"Remove every other ortho tile. Speeds up ortho creation and radiometric equalization."
+    },
+    "--camera-cloud":{
+      "action":"store_true",
+      "default":"False",
+      "help":"Creates a sparse point cloud with camera positions."
+    },
+    "--image-footprint":{
+      "action":"store_true",
+      "default":"False",
+      "help":"Creates a point cloud and geojson with image footprints."
+    },
+    "--ccd-width": {
+      "type": "<type 'float'>",
+      "metavar": "<float>",
+      "help": "The CCD sensor width in millimeters (mm). Example: 6.17"
+    },
+    "--ccd-height": {
+      "type": "<type 'float'>",
+      "metavar": "<float>",
+      "help": "The CCD sensor height in millimeters (mm). Example: 4.55"
+    },
+    "-h": {
+      "action": "help",
+      "default": "==SUPPRESS==",
+      "help": "show this help message and exit"
+    },
+    "--images": {
+      "metavar": "<path>",
+      "help": "Path to input images"
+    },
+    "--version": {
+      "action": "version",
+      "version": "Node MicMac",
+      "help": "Displays version number and exits. "
+    }
+  }
