@@ -20,6 +20,8 @@ from opendm.arghelpers import args_to_dict, save_opts, compare_args, find_rerun_
 
 
 import subprocess
+ #pueba para OpenMVS que parece que termina el proceso y sigue escribiendose...
+import time
 
 def run_graphos_command(command, args):
     """
@@ -121,7 +123,7 @@ if __name__ == '__main__':
     for odm_dir in odm_dirs:
             system.mkdir_p(io.join_paths(project_dir, odm_dir))
 
-    # Controlar desde donde se vuelve a arrancae el proceso según args.rerun_from
+    # Controlar desde donde se vuelve a arrancar el proceso según args.rerun_from
 
     # Create GRAPHOS project
     stdout, stderr, retcode = run_graphos_command("createproj", ["--name", project_file, "--overwrite"])
@@ -129,7 +131,8 @@ if __name__ == '__main__':
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Create GRAPHOS project")
         print(stderr)
 
     progressbc.send_update(1)
@@ -143,7 +146,8 @@ if __name__ == '__main__':
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Add images to project")
         print(stderr)
 
     progressbc.send_update(5)
@@ -154,7 +158,8 @@ if __name__ == '__main__':
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Features")
         print(stderr)
 
     progressbc.send_update(10)
@@ -166,7 +171,8 @@ if __name__ == '__main__':
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Matching")
         print(stderr)
 
     progressbc.send_update(15)
@@ -174,42 +180,44 @@ if __name__ == '__main__':
     # Load Ground Control Points
     
     gcp_file = io.join_paths(gcp_dir, "gcp_list.txt")
-    print("Load Ground Control Points")
-    print(gcp_file)
     if os.path.isfile(gcp_file):
         stdout, stderr, retcode = run_graphos_command("gcps", ["-p", project_file, "--cp", gcp_file])
 
         if retcode == 0:
             print(stdout)
         else:
-            print("Error occurred:")
+            print("ERROR: Load Ground Control Points")
             print(stderr)
 
     progressbc.send_update(16)
 
     # Reconstruction
     
-    if os.path.isfile(gcp_file):
-        stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
-    else:
-        stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file])
+    #if os.path.isfile(gcp_file):
+    #    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
+    #else:
+    #    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file])
+
+    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
 
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Reconstruction")
         print(stderr)
 
     progressbc.send_update(40)
 
     # Densification
 
-    stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file])
+    stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file,  "--mvs:resolution_level", str(2)])
 
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Densification")
         print(stderr)
     
     progressbc.send_update(45)
@@ -218,26 +226,29 @@ if __name__ == '__main__':
     # odm_georeferencing/odm_georeferenced_model.laz o odm_georeferencing/odm_georeferenced_model.las
     # tambien valdría como ply georeferenciado "odm_filterpoints/point_cloud.ply"
     # Por ahora se añade a odm_filterpoints/point_cloud.ply
-    georeferencing_point_cloud = io.join_paths(project_dir, 'odm_filterpoints/point_cloud.ply')
+    #georeferencing_point_cloud = io.join_paths(project_dir, 'odm_filterpoints/point_cloud.ply')
+    georeferencing_point_cloud = io.join_paths(project_dir, 'odm_georeferencing/odm_georeferenced_model.las')
 
-    stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", georeferencing_point_cloud])
+    stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", georeferencing_point_cloud, "--save_colors", "--save_normals"])
 
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Export point cloud")
         print(stderr)
     
     progressbc.send_update(5)
     
     # Mesh 
 
-    stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", str(14)])
+    stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", str(11)])
 
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: Mesh")
         print(stderr)
 
     progressbc.send_update(70)
@@ -249,21 +260,32 @@ if __name__ == '__main__':
     if retcode == 0:
         print(stdout)
     else:
-        print("Error occurred:")
+        print(stdout)
+        print("ERROR: DSM")
         print(stderr)
 
-    dem_path = io.join_paths(project_dir, 'dtm')
+    dem_path = io.join_paths(project_dir, 'dem')
     odm_dem = io.join_paths(project_dir, 'odm_dem')
     shutil.copy(io.join_paths(dem_path, 'dsm.tif'), odm_dem)
-    #shutil.copy(io.join_paths(project_dir, 'dtm.tif'), odm_dem)
 
     progressbc.send_update(80)
 
-
     # Ortho
+
+    stdout, stderr, retcode = run_graphos_command("ortho", ["-p", project_file, "--gsd", str(0.05)])
+
+    if retcode == 0:
+        print(stdout)
+    else:
+        print(stdout)
+        print("ERROR: Orthophoto")
+        print(stderr)
+    
+    ortho_path = io.join_paths(project_dir, 'ortho')
+    odm_ortho = io.join_paths(project_dir, 'odm_orthophoto')
+    shutil.copy(io.join_paths(ortho_path, 'ortho.tif'), odm_ortho)
+
     progressbc.send_update(90)
-    #shutil.copy(ortho/ortho.tif, odm_ortho)
-    #shutil.copy(ortho/ortho.tif, odm_ortho)
 
     if retcode == 0:
         save_opts(opts_json, args)
