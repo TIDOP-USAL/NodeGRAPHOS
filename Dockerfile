@@ -24,27 +24,13 @@ ARG OPENMVS_VERSION=2.2.0
 
 ARG INSTALL_PREFIX=/usr/local
 
+ENV PKG_CONFIG_PATH=${INSTALL_PREFIX}/lib/pkgconfig
+ENV LD_LIBRARY_PATH=${INSTALL_PREFIX}/lib
+
 # Sets the working directory
 WORKDIR /code
 
 # Install dependencies
-#RUN apt-get update && apt-get install -y \
-#build-essential \
-#git \
-#ninja-build \
-#wget \
-#unzip \
-#pkg-config \
-#libjpeg-dev \	
-#libpng-dev \	
-#libtiff-dev \ 	
-#libwebp-dev \	
-#libboost-all-dev \
-#libsqlite3-dev \
-#sqlite3 && \
-#apt-get clean && \
-#rm -rf /var/lib/apt/lists/* 
-
 RUN apt-get update && apt-get install -y \
     build-essential \
     git \
@@ -249,11 +235,28 @@ RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz && \
     cd /code && rm -rf proj-${PROJ_VERSION} proj-${PROJ_VERSION}.tar.gz
 
 # Install the proj-data (grid and database files)
-RUN wget https://download.osgeo.org/proj/proj-data-1.15.tar.gz && \
-    mkdir proj-data-1.15 && \
-    tar -xvf proj-data-1.15.tar.gz -C proj-data-1.15 && \
-    cp -r proj-data-1.15/* ${INSTALL_PREFIX}/share/ && \
-    rm -rf proj-data-1.15 proj-data-1.15.tar.gz
+RUN wget https://download.osgeo.org/proj/proj-data-1.19.tar.gz && \
+    wget https://download.osgeo.org/proj/proj-datumgrid-latest.tar.gz && \
+    mkdir proj && \
+    tar -xvf proj-data-1.19.tar.gz -C proj && \
+    tar -xvf proj-datumgrid-latest.tar.gz -C proj && \
+    cp -r proj/* ${INSTALL_PREFIX}/share/proj/ && \
+    rm -rf proj proj-data-1.19.tar.gz proj-datumgrid-latest.tar.gz
+    
+RUN ldconfig
+
+# libgeotiff
+RUN git clone https://github.com/OSGeo/libgeotiff.git /tmp/libgeotiff && \
+    cd /tmp/libgeotiff && \
+    git checkout 1.7.1 && \
+    mkdir build && cd build && \
+    cmake ../libgeotiff -GNinja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" && \
+    ninja && ninja install && \
+    cd /code && rm -rf /tmp/libgeotiff
+    
+RUN ldconfig
 
 # Build and install GDAL
 RUN git clone --branch release/${GDAL_VERSION} https://github.com/OSGeo/gdal.git /tmp/gdal && \
@@ -285,25 +288,6 @@ RUN git clone --branch 3.4 https://gitlab.com/libeigen/eigen.git /tmp/eigen && \
     ninja install && \
     cd /code && \
     rm -rf /tmp/eigen
-
-#RUN apt-get update && apt-get install -y \
-#	libexpat1-dev \
-#	libfreeimage-dev \
-#    libflann-dev \	
-#    libmetis-dev \
-#    libsuitesparse-dev \
-#    libgflags-dev \	
-#    libglew-dev \
-#    libgtk-3-dev \	
-#    libgmp-dev \
-#    libmpfr-dev \		
-#    qtbase5-dev \
-#    qttools5-dev \
-#    qttools5-dev-tools \
-#    qttranslations5-l10n \
-#    libqt5opengl5-dev \	
-#    && apt-get clean \	
-#    && rm -rf /var/lib/apt/lists/*
 
 # Build and install glog
 RUN git clone https://github.com/google/glog.git /tmp/glog && \
@@ -471,7 +455,13 @@ RUN wget https://github.com/LASzip/LASzip/archive/0069c42307183c49744f1eb170f703
     ninja install && \
     cd /code && rm -rf /tmp/laszip
 
-RUN apt-get update && apt-get install -y libgeotiff-dev libssl-dev libcurl4-openssl-dev libzstd-dev
+RUN apt-get update && apt-get install -y \
+    #libgeotiff-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \ 
+    libzstd-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/PDAL/PDAL.git /tmp/PDAL && \
     cd /tmp/PDAL && \
@@ -527,18 +517,17 @@ RUN git clone https://github.com/PDAL/PDAL.git /tmp/PDAL && \
 #    ninja install  && \
 #    cd /code && rm -rf /tmp/pdal	
 
-RUN git clone https://github.com/TIDOP-USAL/tidoplib.git /tmp/tidoplib && \
+RUN git clone --branch dev_3.2 https://github.com/TIDOP-USAL/tidoplib.git /tmp/tidoplib && \
     cd /tmp/tidoplib && \
-    git checkout 3.2.1 && \ 
     mkdir build && \
     cd build && \
     cmake .. -GNinja  \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+          -DBUILD_TL_FEAT_MATCH=OFF \
           -DWITH_OPENCV=ON \
           -DWITH_GDAL=ON \
           -DWITH_PROJ=ON \
-          -DBUILD_TL_FEAT_MATCH=OFF \
           -DBUILD_APPS=OFF \
           -DBUILD_TEST=OFF \
           -DBUILD_DOC=OFF \
@@ -592,6 +581,23 @@ RUN git clone --branch dev https://github.com/TIDOP-USAL/graphos.git /tmp/grapho
     ninja -j4 && \
     ninja install && \
     cd /code && rm -rf /tmp/graphos	    
+
+#COPY graphos_copy2 /tmp/graphos
+#
+#RUN cd /tmp/graphos && \
+#    mkdir build && \
+#    cd build && \
+#    cmake .. -GNinja \
+#          -DCMAKE_BUILD_TYPE=Release \
+#          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+#          -DBUILD_GUI=OFF \
+#          -DBUILD_TRANSLATION=OFF \
+#          -DBUILD_ORTHOPHOTO_COMPONENT=ON \
+#          -DWITH_CUDA=ON && \
+#    ninja -j4 && \
+#    ninja install && \
+#    cd /code && rm -rf /tmp/graphos
+
 
 RUN git clone https://github.com/OpenDroneMap/ODM.git /tmp/odm && \
     cp -r /tmp/odm/opendm/ /code/ && \
@@ -653,9 +659,8 @@ RUN mkdir -p /code
 COPY --from=builder /code /code
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /usr/local/lib/*.so* /usr/local/lib/
-#COPY --from=builder /usr/local/lib /usr/local/lib
-#COPY --from=builder /usr/local/include /usr/local/include
 COPY --from=builder /usr/local/share /usr/local/share
+COPY graphos/proj/* /usr/local/share/proj/
 
 RUN ldconfig
 

@@ -22,6 +22,7 @@ from opendm.arghelpers import args_to_dict, save_opts, compare_args, find_rerun_
 import subprocess
  #pueba para OpenMVS que parece que termina el proceso y sigue escribiendose...
 import time
+from collections import OrderedDict
 
 def run_graphos_command(command, args):
     """
@@ -69,10 +70,71 @@ def list_images(image_dir, output_file):
             # Write the full path to the output file
             file.write(image_path + "\n")
 
+def create_project(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("createproj", ["--name", project_file, "--overwrite"])
+    progressbc.send_update(1)
+    return stdout, stderr, retcode
+
+def add_images(project_file, image_dir, images_file, progressbc):
+    list_images(image_dir, images_file)
+    stdout, stderr, retcode = run_graphos_command("image_manager", ["-p", project_file, "-l", images_file])
+    progressbc.send_update(5)
+    return stdout, stderr, retcode
+
+def featextract(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("featextract", ["-p", project_file])
+    progressbc.send_update(10)
+    return stdout, stderr, retcode
+
+def featmatch(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("featmatch", ["-p", project_file])
+    progressbc.send_update(15)
+    return stdout, stderr, retcode
+
+def gcps(project_file, gcp_file, progressbc):
+    if os.path.isfile(gcp_file):
+        stdout, stderr, retcode = run_graphos_command("gcps", ["-p", project_file, "--cp", gcp_file])
+        progressbc.send_update(16)
+        return stdout, stderr, retcode
+    return (None, None, 0)
+
+def ori(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
+    progressbc.send_update(40)
+    return stdout, stderr, retcode
+
+def dense(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file, "--mvs:resolution_level", "2"])
+    progressbc.send_update(45)
+    return stdout, stderr, retcode
+
+def export_point_cloud(project_file, output_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", output_file, "--save_colors", "--save_normals"])
+    progressbc.send_update(5)    
+    return stdout, stderr, retcode
+
+def mesh(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", "11"])
+    progressbc.send_update(70)
+    return stdout, stderr, retcode
+
+def dem(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("dem", ["-p", project_file, "--gsd", "0.1"])
+    progressbc.send_update(80)
+    return stdout, stderr, retcode
+
+def ortho(project_file, progressbc):
+    stdout, stderr, retcode = run_graphos_command("ortho", ["-p", project_file, "--gsd", "0.05"])
+    progressbc.send_update(90)
+    return stdout, stderr, retcode
+
+
+
+
 if __name__ == '__main__':
     args = config.config()
 
-    log.ODM_INFO('Initializing ODM %s - %s' % (graphos_version(), system.now()))
+    log.ODM_INFO('Initializing NodeGRAPHOS %s - %s' % (graphos_version(), system.now()))
 
     progressbc.set_project_name(args.name)
     args.project_path = os.path.join(args.project_path, args.name)
@@ -106,6 +168,21 @@ if __name__ == '__main__':
     #              os.path.join(args.project_path, "submodels")]:
     #        rm_r(d)
 
+    pipeline = OrderedDict([
+        ("createproj", lambda: create_project(args, project_file)),
+        ("image_manager", lambda: add_images(args, project_file, image_dir)),
+        ("featextract", lambda: featextract(args, project_file)),
+        ("featmatch", lambda: featmatch(args, project_file)),
+        ("gcps", lambda: gcps(args, project_file, gcp_file)),
+        ("ori", lambda: ori(args, project_file)),
+        ("dense", lambda: dense(args, project_file)),
+        ("export_point_cloud", lambda: export_point_cloud(args, project_file, georeferencing_point_cloud)),
+        ("mesh", lambda: mesh(args, project_file)),
+        ("dem", lambda: dem(args, project_file)),
+        ("ortho", lambda: ortho(args, project_file)),
+    ])
+
+
     #app = ODMApp(args)
     #retcode = app.execute()
 
@@ -114,6 +191,7 @@ if __name__ == '__main__':
     print(project_dir)
     project_file = io.join_paths(project_dir, args.name + ".xml")
     image_dir = io.join_paths(project_dir, 'images')
+    images_file = io.join_paths(args.project_path, "image_list.txt")
     gcp_dir = io.join_paths(project_dir, 'gcp')
 
     # Esto lo hacen en NodeMicMac. No se si hay forma de cambiar las rutas de los directorios para evitar la copia
@@ -282,8 +360,9 @@ if __name__ == '__main__':
         print(stderr)
     
     ortho_path = io.join_paths(project_dir, 'ortho')
-    odm_ortho = io.join_paths(project_dir, 'odm_orthophoto')
-    shutil.copy(io.join_paths(ortho_path, 'ortho.tif'), odm_ortho)
+    odm_ortho_dir = io.join_paths(project_dir, 'odm_orthophoto')
+    odm_ortho_path = io.join_paths(odm_ortho_dir, 'odm_orthophoto.tif')
+    shutil.copy(io.join_paths(ortho_path, 'ortho.tif'), odm_ortho_path)
 
     progressbc.send_update(90)
 
