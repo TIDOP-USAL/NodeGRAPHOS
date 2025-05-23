@@ -70,61 +70,200 @@ def list_images(image_dir, output_file):
             # Write the full path to the output file
             file.write(image_path + "\n")
 
-def create_project(project_file, progressbc):
+def create_project(args, project_file, progressbc):
     stdout, stderr, retcode = run_graphos_command("createproj", ["--name", project_file, "--overwrite"])
     progressbc.send_update(1)
     return stdout, stderr, retcode
 
-def add_images(project_file, image_dir, images_file, progressbc):
+def add_images(args, project_file, progressbc):
+    images_file = io.join_paths(args.project_path, "image_list.txt")
+    image_dir = io.join_paths(args.project_path, 'images')
     list_images(image_dir, images_file)
-    stdout, stderr, retcode = run_graphos_command("image_manager", ["-p", project_file, "-l", images_file])
+
+    cmd_args = ["-p", project_file]
+    cmd_args += ["-l", images_file]
+    if getattr(args, "camera_lens", None) is not None:
+        cmd_args += ["--camera", str(args.camera_lens)]
+
+    stdout, stderr, retcode = run_graphos_command("image_manager", cmd_args)
     progressbc.send_update(5)
     return stdout, stderr, retcode
 
-def featextract(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("featextract", ["-p", project_file])
+def featextract(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+
+    if getattr(args, "max_image_size", None) is not None:
+        cmd_args += ["--max_image_size", str(args.max_image_size)]
+
+    if getattr(args, "max_features_number", None) is not None:
+        cmd_args += ["--max_features_number", str(args.max_features_number)]
+
+    if getattr(args, "octave_resolution", None) is not None:
+        cmd_args += ["--octave_resolution", str(args.octave_resolution)]
+
+    if getattr(args, "contrast_threshold", None) is not None:
+        cmd_args += ["--contrast_threshold", str(args.contrast_threshold)]
+
+    if getattr(args, "edge_threshold", None) is not None:
+        cmd_args += ["--edge_threshold", str(args.edge_threshold)]
+
+    if getattr(args, "no_gpu", None) is not None:
+        cmd_args += ["--disable_cuda"]
+
+    stdout, stderr, retcode = run_graphos_command("featextract", cmd_args)
     progressbc.send_update(10)
+    
     return stdout, stderr, retcode
 
-def featmatch(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("featmatch", ["-p", project_file])
+def featmatch(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+
+    if getattr(args, "ratio", None) is not None:
+        cmd_args += ["--ratio", str(args.ratio)]
+
+    if getattr(args, "distance", None) is not None:
+        cmd_args += ["--distance", str(args.distance)]    
+
+    if getattr(args, "max_error", None) is not None:
+        cmd_args += ["--max_error", str(args.max_error)]
+
+    if getattr(args, "confidence", None) is not None:
+        cmd_args += ["--confidence", str(args.confidence)]
+
+    if getattr(args, "cross_check", None):
+        cmd_args += ["--cross_check"]
+
+    if getattr(args, "exhaustive_matching", None):
+        cmd_args += ["--exhaustive_matching"]
+
+    if getattr(args, "no_gpu", None) is not None:
+        cmd_args += ["--disable_cuda"]
+
+    stdout, stderr, retcode = run_graphos_command("featmatch", cmd_args)
     progressbc.send_update(15)
+
     return stdout, stderr, retcode
 
-def gcps(project_file, gcp_file, progressbc):
+def gcps(args, project_file, progressbc):
+    gcp_dir = io.join_paths(args.project_path, 'gcp')
+    gcp_file = io.join_paths(gcp_dir, "gcp_list.txt")
+
     if os.path.isfile(gcp_file):
         stdout, stderr, retcode = run_graphos_command("gcps", ["-p", project_file, "--cp", gcp_file])
         progressbc.send_update(16)
         return stdout, stderr, retcode
     return (None, None, 0)
 
-def ori(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
+def ori(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+    cmd_args += ["-a"]
+
+    # if getattr(args, "fix_calibration", None) is not None:
+    #     cmd_args += ["--fix_calibration", str(args.fix_calibration)]
+
+    # if getattr(args, "use_rtk_accuracy", None) is not None:
+    #     cmd_args += ["--use_rtk_accuracy", str(args.use_rtk_accuracy)]
+
+    # if getattr(args, "use_gcp", None) is not None:
+    #     cmd_args += ["--use_gcp", str(args.use_gcp)]
+
+    # if getattr(args, "use_poses", None) is not None:
+    #     cmd_args += ["--use_poses", str(args.use_poses)]
+
+    
+    if args.use_gcp is not None:
+        cmd_args += ["--use_gcp", str(args.use_gcp)]
+
+    if args.use_poses is not None:
+        cmd_args += ["--use_poses", str(args.use_gcp)]
+
+    stdout, stderr, retcode = run_graphos_command("ori", cmd_args)
     progressbc.send_update(40)
     return stdout, stderr, retcode
 
-def dense(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file, "--mvs:resolution_level", "2"])
+def dense(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+
+    if getattr(args, "resolution_level", None) is not None:
+        cmd_args += ["--mvs:resolution_level", str(args.resolution_level)]
+
+    if getattr(args, "min_resolution", None) is not None:
+        cmd_args += ["--mvs:min_resolution", str(args.min_resolution)]
+
+    if getattr(args, "max_resolution", None) is not None:
+        cmd_args += ["--mvs:max_resolution", str(args.max_resolution)]
+
+    if getattr(args, "number_views", None) is not None:
+        cmd_args += ["--mvs:number_views", str(args.number_views)]
+
+    if getattr(args, "number_views_fuse", None) is not None:
+        cmd_args += ["--mvs:number_views_fuse", str(args.number_views_fuse)]
+
+    if getattr(args, "estimate_colors", None) is not None:
+        cmd_args += ["--estimate_colors"]
+
+    if getattr(args, "estimate_normals", None) is not None:
+        cmd_args += ["--estimate_normals"]
+
+    if args.segment:
+        cmd_args += ["--segment"]
+
+    if getattr(args, "no_gpu", None) is not None:
+        cmd_args += ["--disable_cuda"]
+
+    stdout, stderr, retcode = run_graphos_command("dense", cmd_args)
     progressbc.send_update(45)
     return stdout, stderr, retcode
 
-def export_point_cloud(project_file, output_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", output_file, "--save_colors", "--save_normals"])
+def export_point_cloud(args, project_file, progressbc):
+    georeferencing_point_cloud = io.join_paths(args.project_path, 'odm_georeferencing/odm_georeferenced_model.las')
+
+    cmd_args = ["-p", project_file]
+    cmd_args += ["-f", georeferencing_point_cloud]
+
+    if getattr(args, "save_colors", None) is not None:
+        cmd_args += ["--save_colors", str(args.save_colors)]
+    
+    if getattr(args, "save_normals", None) is not None:
+        cmd_args += ["--save_normals", str(args.save_normals)]
+
+    stdout, stderr, retcode = run_graphos_command("export_point_cloud", cmd_args)
     progressbc.send_update(5)    
     return stdout, stderr, retcode
 
-def mesh(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", "11"])
+def mesh(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+
+    if getattr(args, "depth", None) is not None:
+        cmd_args += ["--depth", str(args.depth)]
+
+    if getattr(args, "boundary_type", None) is not None:
+        cmd_args += ["--boundary_type", str(args.boundary_type)]
+
+    stdout, stderr, retcode = run_graphos_command("mesh", cmd_args)
     progressbc.send_update(70)
     return stdout, stderr, retcode
 
-def dem(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("dem", ["-p", project_file, "--gsd", "0.1"])
+def dem(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+
+    if getattr(args, "dem_resolution", None) is not None:
+        cmd_args += ["--gsd", str(args.dem_resolution)]
+    
+    stdout, stderr, retcode = run_graphos_command("dem", cmd_args)
     progressbc.send_update(80)
     return stdout, stderr, retcode
 
-def ortho(project_file, progressbc):
-    stdout, stderr, retcode = run_graphos_command("ortho", ["-p", project_file, "--gsd", "0.05"])
+def ortho(args, project_file, progressbc):
+    cmd_args = ["-p", project_file]
+
+    if getattr(args, "orthophoto_resolution", None) is not None:
+        cmd_args += ["--gsd", str(args.orthophoto_resolution)]
+
+    if getattr(args, "no_gpu", None) is not None:
+        cmd_args += ["--disable_cuda"]
+
+    stdout, stderr, retcode = run_graphos_command("ortho", cmd_args)
     progressbc.send_update(90)
     return stdout, stderr, retcode
 
@@ -168,19 +307,19 @@ if __name__ == '__main__':
     #              os.path.join(args.project_path, "submodels")]:
     #        rm_r(d)
 
-    pipeline = OrderedDict([
-        ("createproj", lambda: create_project(args, project_file)),
-        ("image_manager", lambda: add_images(args, project_file, image_dir)),
-        ("featextract", lambda: featextract(args, project_file)),
-        ("featmatch", lambda: featmatch(args, project_file)),
-        ("gcps", lambda: gcps(args, project_file, gcp_file)),
-        ("ori", lambda: ori(args, project_file)),
-        ("dense", lambda: dense(args, project_file)),
-        ("export_point_cloud", lambda: export_point_cloud(args, project_file, georeferencing_point_cloud)),
-        ("mesh", lambda: mesh(args, project_file)),
-        ("dem", lambda: dem(args, project_file)),
-        ("ortho", lambda: ortho(args, project_file)),
-    ])
+    #pipeline = OrderedDict([
+    #    ("createproj", lambda: create_project(args, project_file)),
+    #    ("image_manager", lambda: add_images(args, project_file, image_dir)),
+    #    ("featextract", lambda: featextract(args, project_file)),
+    #    ("featmatch", lambda: featmatch(args, project_file)),
+    #    ("gcps", lambda: gcps(args, project_file, gcp_file)),
+    #    ("ori", lambda: ori(args, project_file)),
+    #    ("dense", lambda: dense(args, project_file)),
+    #    ("export_point_cloud", lambda: export_point_cloud(args, project_file, georeferencing_point_cloud)),
+    #    ("mesh", lambda: mesh(args, project_file)),
+    #    ("dem", lambda: dem(args, project_file)),
+    #    ("ortho", lambda: ortho(args, project_file)),
+    #])
 
 
     #app = ODMApp(args)
@@ -188,11 +327,11 @@ if __name__ == '__main__':
 
     #project_dir = io.join_paths(args.project_path, args.name)
     project_dir = args.project_path
-    print(project_dir)
+    #print(project_dir)
     project_file = io.join_paths(project_dir, args.name + ".xml")
-    image_dir = io.join_paths(project_dir, 'images')
-    images_file = io.join_paths(args.project_path, "image_list.txt")
-    gcp_dir = io.join_paths(project_dir, 'gcp')
+    #image_dir = io.join_paths(project_dir, 'images')
+    #images_file = io.join_paths(args.project_path, "image_list.txt")
+    #gcp_dir = io.join_paths(project_dir, 'gcp')
 
     # Esto lo hacen en NodeMicMac. No se si hay forma de cambiar las rutas de los directorios para evitar la copia
     # create output directories (match ODM conventions for backward compatibility, even though this is MicMac)
@@ -204,7 +343,8 @@ if __name__ == '__main__':
     # Controlar desde donde se vuelve a arrancar el proceso según args.rerun_from
 
     # Create GRAPHOS project
-    stdout, stderr, retcode = run_graphos_command("createproj", ["--name", project_file, "--overwrite"])
+    stdout, stderr, retcode = create_project(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("createproj", ["--name", project_file, "--overwrite"])
 
     if retcode == 0:
         print(stdout)
@@ -213,13 +353,13 @@ if __name__ == '__main__':
         print("ERROR: Create GRAPHOS project")
         print(stderr)
 
-    progressbc.send_update(1)
+    #progressbc.send_update(1)
 
     # Add images to project
-    output_file = io.join_paths(project_dir, "image_list.txt")
-    list_images(image_dir, output_file)
-
-    stdout, stderr, retcode = run_graphos_command("image_manager", ["-p", project_file, "-l", output_file])
+    #output_file = io.join_paths(project_dir, "image_list.txt")
+    #list_images(image_dir, output_file)
+    stdout, stderr, retcode = add_images(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("image_manager", ["-p", project_file, "-l", output_file])
 
     if retcode == 0:
         print(stdout)
@@ -228,46 +368,52 @@ if __name__ == '__main__':
         print("ERROR: Add images to project")
         print(stderr)
 
-    progressbc.send_update(5)
+    #progressbc.send_update(5)
 
     # Features
-    stdout, stderr, retcode = run_graphos_command("featextract", ["-p", project_file])
+    stdout, stderr, retcode = featextract(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("featextract", ["-p", project_file])
 
     if retcode == 0:
         print(stdout)
     else:
-        print(stdout)
         print("ERROR: Features")
         print(stderr)
 
-    progressbc.send_update(10)
+    #progressbc.send_update(10)
 
     # Matching
-
-    stdout, stderr, retcode = run_graphos_command("featmatch", ["-p", project_file])
+    stdout, stderr, retcode = featmatch(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("featmatch", ["-p", project_file])
 
     if retcode == 0:
         print(stdout)
     else:
-        print(stdout)
         print("ERROR: Matching")
         print(stderr)
 
-    progressbc.send_update(15)
+    #progressbc.send_update(15)
 
     # Load Ground Control Points
-    
-    gcp_file = io.join_paths(gcp_dir, "gcp_list.txt")
-    if os.path.isfile(gcp_file):
-        stdout, stderr, retcode = run_graphos_command("gcps", ["-p", project_file, "--cp", gcp_file])
+    stdout, stderr, retcode = gcps(args, project_file, progressbc)
 
-        if retcode == 0:
-            print(stdout)
-        else:
-            print("ERROR: Load Ground Control Points")
-            print(stderr)
+    if retcode == 0:
+        print(stdout)
+    else:
+        print("ERROR: Load Ground Control Points")
+        print(stderr)
 
-    progressbc.send_update(16)
+    #gcp_file = io.join_paths(gcp_dir, "gcp_list.txt")
+    #if os.path.isfile(gcp_file):
+    #    stdout, stderr, retcode = run_graphos_command("gcps", ["-p", project_file, "--cp", gcp_file])
+
+    #    if retcode == 0:
+    #        print(stdout)
+    #    else:
+    #        print("ERROR: Load Ground Control Points")
+    #        print(stderr)
+
+    #progressbc.send_update(16)
 
     # Reconstruction
     
@@ -276,7 +422,8 @@ if __name__ == '__main__':
     #else:
     #    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file])
 
-    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
+    #stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
+    stdout, stderr, retcode = ori(args, project_file, progressbc)
 
     if retcode == 0:
         print(stdout)
@@ -285,11 +432,11 @@ if __name__ == '__main__':
         print("ERROR: Reconstruction")
         print(stderr)
 
-    progressbc.send_update(40)
+    #progressbc.send_update(40)
 
     # Densification
-
-    stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file,  "--mvs:resolution_level", str(2)])
+    stdout, stderr, retcode = dense(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file,  "--mvs:resolution_level", str(2)])
 
     if retcode == 0:
         print(stdout)
@@ -298,16 +445,17 @@ if __name__ == '__main__':
         print("ERROR: Densification")
         print(stderr)
     
-    progressbc.send_update(45)
+    #progressbc.send_update(45)
 
     # Exportar a las o laz en coordenadas UTM para que funcionen los postprocesos de NodeODM
     # odm_georeferencing/odm_georeferenced_model.laz o odm_georeferencing/odm_georeferenced_model.las
     # tambien valdría como ply georeferenciado "odm_filterpoints/point_cloud.ply"
     # Por ahora se añade a odm_filterpoints/point_cloud.ply
     #georeferencing_point_cloud = io.join_paths(project_dir, 'odm_filterpoints/point_cloud.ply')
-    georeferencing_point_cloud = io.join_paths(project_dir, 'odm_georeferencing/odm_georeferenced_model.las')
+    #georeferencing_point_cloud = io.join_paths(project_dir, 'odm_georeferencing/odm_georeferenced_model.las')
 
-    stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", georeferencing_point_cloud, "--save_colors", "--save_normals"])
+    stdout, stderr, retcode = export_point_cloud(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", georeferencing_point_cloud, "--save_colors", "--save_normals"])
 
     if retcode == 0:
         print(stdout)
@@ -316,11 +464,11 @@ if __name__ == '__main__':
         print("ERROR: Export point cloud")
         print(stderr)
     
-    progressbc.send_update(5)
+    #progressbc.send_update(5)
     
     # Mesh 
-
-    stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", str(11)])
+    stdout, stderr, retcode = mesh(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", str(11)])
 
     if retcode == 0:
         print(stdout)
@@ -329,11 +477,11 @@ if __name__ == '__main__':
         print("ERROR: Mesh")
         print(stderr)
 
-    progressbc.send_update(70)
+    #progressbc.send_update(70)
 
     # DEM
-
-    stdout, stderr, retcode = run_graphos_command("dem", ["-p", project_file, "--gsd", str(0.1)])
+    stdout, stderr, retcode = dem(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("dem", ["-p", project_file, "--gsd", str(0.1)])
 
     if retcode == 0:
         print(stdout)
@@ -346,11 +494,11 @@ if __name__ == '__main__':
     odm_dem = io.join_paths(project_dir, 'odm_dem')
     shutil.copy(io.join_paths(dem_path, 'dsm.tif'), odm_dem)
 
-    progressbc.send_update(80)
+    #progressbc.send_update(80)
 
     # Ortho
-
-    stdout, stderr, retcode = run_graphos_command("ortho", ["-p", project_file, "--gsd", str(0.05)])
+    stdout, stderr, retcode = ortho(args, project_file, progressbc)
+    #stdout, stderr, retcode = run_graphos_command("ortho", ["-p", project_file, "--gsd", str(0.05)])
 
     if retcode == 0:
         print(stdout)
@@ -364,7 +512,7 @@ if __name__ == '__main__':
     odm_ortho_path = io.join_paths(odm_ortho_dir, 'odm_orthophoto.tif')
     shutil.copy(io.join_paths(ortho_path, 'ortho.tif'), odm_ortho_path)
 
-    progressbc.send_update(90)
+    #progressbc.send_update(90)
 
     if retcode == 0:
         save_opts(opts_json, args)

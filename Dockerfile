@@ -74,38 +74,8 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.21.4/cmake-3.21.4
     chmod +x cmake-3.21.4-linux-x86_64.sh && \
     ./cmake-3.21.4-linux-x86_64.sh --skip-license --prefix=/usr/local && \
     rm cmake-3.21.4-linux-x86_64.sh
-
-#RUN git clone --branch ${OPENCV_VERSION} https://github.com/opencv/opencv.git /tmp/opencv && \
-#    git clone --branch ${OPENCV_VERSION} https://github.com/opencv/opencv_contrib.git /tmp/opencv_contrib && \
-#    mkdir -p /tmp/opencv/build && \
-#    cd /tmp/opencv/build && \
-#    cmake .. -GNinja \
-#          -DCMAKE_BUILD_TYPE=Release \
-#          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-#          -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv_contrib/modules \
-#          -DWITH_CUDA=ON \
-#          -DCUDA_ARCH_BIN="5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6" \
-#          -DCUDA_ARCH_PTX="" \
-#          -DENABLE_FAST_MATH=OFF \
-#          -DCUDA_FAST_MATH=OFF \
-#          -DWITH_CUBLAS=ON \
-#          -DWITH_GSTREAMER=OFF \
-#          -DWITH_V4L=ON \
-#          -DBUILD_opencv_apps=OFF \
-#          -DBUILD_opencv_python2=OFF \
-#          -DBUILD_opencv_python3=OFF \
-#          -DBUILD_JAVA=OFF \   
-#          -DBUILD_EXAMPLES=OFF \
-#          -DBUILD_TESTS=OFF \
-#          -DBUILD_DOCS=OFF \
-#          -DBUILD_PERF_TESTS=OFF \
-#          -DCMAKE_CXX_FLAGS="-Wno-deprecated-declarations -march=x86-64 -mtune=generic" .. && \     
-#    ninja -j2 && \
-#    ninja install && \
-#    ldconfig && \
-#    cd /code && \
-#    rm -rf /tmp/opencv /tmp/opencv_contrib
     
+# Build and install OpenCV
 RUN git clone --branch ${OPENCV_VERSION} https://github.com/opencv/opencv.git /tmp/opencv && \
     git clone --branch ${OPENCV_VERSION} https://github.com/opencv/opencv_contrib.git /tmp/opencv_contrib && \
     mkdir -p /tmp/opencv/build && \
@@ -385,27 +355,6 @@ RUN git clone https://github.com/cdcseacave/openMVS.git /tmp/openMVS && \
     make install && \
     cd /code && rm -rf /tmp/openMVS
 
-# Build and install tidoplib
-#RUN git clone --branch dev_3.1 https://github.com/TIDOP-USAL/tidoplib.git /tmp/tidoplib && \
-#    cd /tmp/tidoplib && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. -GNinja  \
-#          -DCMAKE_BUILD_TYPE=Release \
-#          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-#          -DWITH_OPENCV=ON \
-#          -DWITH_GDAL=ON \
-#          -DWITH_PROJ=ON \
-#          -DBUILD_APPS=OFF \
-#          -DBUILD_TEST=OFF \
-#          -DBUILD_DOC=OFF \
-#          -DWITH_CUDA=ON \
-#          -DTIDOPLIB_USE_SIMD_INTRINSICS=ON \
-#          -DTIDOPLIB_CXX_STANDARD=C++14 && \
-#    ninja && \
-#    ninja install && \
-#    cd /code && rm -rf /tmp/tidoplib	
-
 RUN git clone https://github.com/hobuinc/laz-perf.git  /tmp/laz-perf && \
     cd /tmp/laz-perf && \
     mkdir build && cd build && \
@@ -427,19 +376,6 @@ RUN git clone https://github.com/RockRobotic/copc-lib.git  /tmp/copc-lib && \
     ninja install && \
     cd /code && rm -rf /tmp/copc-lib
 
-#RUN git clone https://github.com/PDAL/PDAL.git /tmp/PDAL && \
-#    cd /tmp/PDAL && \
-#    git checkout 2.8.0 && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. -GNinja  \
-#             -DCMAKE_BUILD_TYPE=Release \
-#             -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-#             -DWITH_TESTS=OFF && \
-#    ninja && \
-#    ninja install && \
-#    cd /code && rm -rf /tmp/PDAL
-
 # Build and install LASzip
 RUN wget https://github.com/LASzip/LASzip/archive/0069c42307183c49744f1eb170f7032a8cf6a9db.zip -O laszip.zip && \
     unzip laszip.zip && \
@@ -456,7 +392,6 @@ RUN wget https://github.com/LASzip/LASzip/archive/0069c42307183c49744f1eb170f703
     cd /code && rm -rf /tmp/laszip
 
 RUN apt-get update && apt-get install -y \
-    #libgeotiff-dev \
     libssl-dev \
     libcurl4-openssl-dev \ 
     libzstd-dev \
@@ -479,44 +414,6 @@ RUN git clone https://github.com/PDAL/PDAL.git /tmp/PDAL && \
     ninja install && \
     cd /code && rm -rf /tmp/PDAL
 
-# Build and install PDAL.
-#RUN git clone --no-checkout https://github.com/PDAL/PDAL.git /tmp/pdal && \
-#    cd /tmp/pdal && \
-#    git checkout 2.1.0  && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. -GNinja  \
-#          -DCMAKE_BUILD_TYPE=Release \
-#          -DWITH_TEST=OFF \
-#          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}  \
-#          -DBUILD_PGPOINTCLOUD_TESTS=OFF \
-#          -DBUILD_PLUGIN_PGPOINTCLOUD=OFF \
-#          -DBUILD_PLUGIN_CPD=OFF \
-#          -DBUILD_PLUGIN_GREYHOUND=OFF \
-#          -DBUILD_PLUGIN_HEXBIN=ON \
-#          -DBUILD_PLUGIN_ICEBRIDGE=OFF \
-#          -DBUILD_PLUGIN_MRSID=OFF \
-#          -DBUILD_PLUGIN_NITF=OFF \
-#          -DBUILD_PLUGIN_OCI=OFF \
-#          -DBUILD_PLUGIN_P2G=OFF \
-#          -DBUILD_PLUGIN_SQLITE=OFF \
-#          -DBUILD_PLUGIN_RIVLIB=OFF \
-#          -DBUILD_PLUGIN_PYTHON=OFF \
-#          -DWITH_ZSTD=OFF \
-#          -DENABLE_CTEST=OFF \
-#          -DWITH_APPS=ON \
-#          -DWITH_LAZPERF=ON \
-#          -DWITH_GEOTIFF=ON \
-#          -DLASZIP_FOUND=TRUE \
-#          -DWITH_LASZIP=ON \
-#          -DLASZIP_VERSION=3.1.1 \
-#          -DLASZIP_LIBRARIES=${INSTALL_PREFIX}/lib/liblaszip.so \
-#          -DLASZIP_INCLUDE_DIR=${INSTALL_PREFIX}/include/laszip \
-#          -DLASZIP_LIBRARY=${INSTALL_PREFIX}/lib/liblaszip.so && \
-#    ninja && \
-#    ninja install  && \
-#    cd /code && rm -rf /tmp/pdal	
-
 RUN git clone --branch dev_3.2 https://github.com/TIDOP-USAL/tidoplib.git /tmp/tidoplib && \
     cd /tmp/tidoplib && \
     mkdir build && \
@@ -536,21 +433,7 @@ RUN git clone --branch dev_3.2 https://github.com/TIDOP-USAL/tidoplib.git /tmp/t
           -DTIDOPLIB_CXX_STANDARD=C++14 && \
     ninja && \
     ninja install && \
-    cd /code && rm -rf /tmp/tidoplib	
-
-# Build and install entwine
-#RUN git clone --branch 290 --depth 1 https://github.com/OpenDroneMap/entwine /tmp/entwine && \
-#    cd /tmp/entwine && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. -GNinja \
-#          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-#	      -DWITH_TESTS=OFF \
-#          -DWITH_ZSTD=OFF \ 
-#	      -DCMAKE_BUILD_TYPE=Release && \
-#    ninja && \
-#    ninja install && \
-#    cd /code && rm -rf /tmp/entwine	
+    cd /code && rm -rf /tmp/tidoplib		
 
 RUN git clone https://github.com/connormanning/entwine /tmp/entwine && \
     cd /tmp/entwine && \
@@ -580,34 +463,17 @@ RUN git clone --branch dev https://github.com/TIDOP-USAL/graphos.git /tmp/grapho
           -DWITH_CUDA=ON && \
     ninja -j4 && \
     ninja install && \
-    cd /code && rm -rf /tmp/graphos	    
+    cd /code && rm -rf /tmp/graphos
 
-#COPY graphos_copy2 /tmp/graphos
-#
-#RUN cd /tmp/graphos && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. -GNinja \
-#          -DCMAKE_BUILD_TYPE=Release \
-#          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-#          -DBUILD_GUI=OFF \
-#          -DBUILD_TRANSLATION=OFF \
-#          -DBUILD_ORTHOPHOTO_COMPONENT=ON \
-#          -DWITH_CUDA=ON && \
-#    ninja -j4 && \
-#    ninja install && \
-#    cd /code && rm -rf /tmp/graphos
-
-
+# Reemplazar settings.yaml por mi propio fichero de configuración
 RUN git clone https://github.com/OpenDroneMap/ODM.git /tmp/odm && \
     cp -r /tmp/odm/opendm/ /code/ && \
-    cp /tmp/odm/settings.yaml /code/ && \
+    cp /tmp/odm/settings.yaml /code/ && \ 
     cp /tmp/odm/requirements.txt /code/ && \
     rm -rf /tmp/odm
 
 
 FROM nvidia/cuda:11.5.2-runtime-ubuntu20.04
-#FROM nvidia/cuda:11.5.2-devel-ubuntu20.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -664,34 +530,6 @@ COPY graphos/proj/* /usr/local/share/proj/
 
 RUN ldconfig
 
-#COPY start_graphos.sh /usr/local/bin/start_graphos.sh
-#COPY start_graphos.sh /var/www/start_graphos.sh
-#RUN chmod +x /usr/local/bin/start_graphos.sh
-#RUN chmod +x /var/www/start_graphos.sh
-
-
-
-#COPY graphos/VERSION /code
-#COPY graphos/run.sh /code
-#COPY graphos/run.py /code
-#COPY graphos/odm_options.json /code
-
-#ODM
-
-#RUN mkdir -p /code/opendm
-#RUN mkdir -p /code/stages
-#RUN git clone https://github.com/OpenDroneMap/ODM.git /tmp/odm
-#RUN cp -r /tmp/odm/opendm /code/ && \
-#    cp -r /tmp/odm/stages /code/ && \
-#    rm -rf /tmp/odm
-
-#RUN git clone https://github.com/OpenDroneMap/ODM.git /tmp/odm && \
-#    cp -r /tmp/odm/opendm/ /code/ && \
-#    cp /tmp/odm/settings.yaml /code/ && \
-#    rm -rf /tmp/odm
-
-#RUN apt-get update && apt-get install -y curl python3 python3-pip python3-setuptools
-
 RUN pip3 install -U shyaml
 #Para ODM
 RUN pip install -r /code/requirements.txt
@@ -699,29 +537,16 @@ RUN pip install -r /code/requirements.txt
 COPY graphos/VERSION /code
 COPY graphos/run.sh /code
 COPY graphos/run.py /code
-COPY graphos/odm_options.json /code
+COPY graphos/config.py /code/opendm
+#COPY graphos/odm_options.json /code
 
 RUN chmod +x /code/run.sh
 
 EXPOSE 3000
 
-# Esto creo que utiliza la imagen de ODM
-#USER root
-#RUN apt-get update && apt-get install -y curl gpg-agent
-#RUN curl --silent --location https://deb.nodesource.com/setup_14.x | bash -
-#RUN apt-get install -y nodejs unzip p7zip-full && npm install -g nodemon && \
-#    ln -s /code/SuperBuild/install/bin/untwine /usr/local/bin/untwine && \
-#    ln -s /code/SuperBuild/install/bin/entwine /usr/local/bin/entwine && \
-#    ln -s /code/SuperBuild/install/bin/pdal /usr/local/bin/pdal
-
 WORKDIR /var/www
 COPY . /var/www
 
-#RUN apt-get update && apt-get install -y curl python3 python3-pip python3-setuptools
-
-#RUN pip3 install -U shyaml
-#Para ODM
-#RUN pip install -r /code/requirements.txt
 
 RUN curl --silent --location https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs unzip p7zip-full && npm install -g nodemon
@@ -731,4 +556,3 @@ RUN ln -s "$(which python3)" /usr/bin/python
 ENV python="$(which python3)"
 
 ENTRYPOINT ["/usr/bin/node", "/var/www/index.js"]
-#ENTRYPOINT ["/bin/bash"]
