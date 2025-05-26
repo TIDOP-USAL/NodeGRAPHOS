@@ -31,7 +31,7 @@ ENV LD_LIBRARY_PATH=${INSTALL_PREFIX}/lib
 WORKDIR /code
 
 # Install dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     ninja-build \
@@ -66,6 +66,9 @@ RUN apt-get update && apt-get install -y \
     python3-setuptools \
     libopenmpi-dev \
     libhdf5-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libzstd-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -181,7 +184,7 @@ RUN git clone --branch 10.0.0 https://github.com/fmtlib/fmt.git /tmp/fmt && \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DFMT_TEST=OFF \
           -DFMT_DOC=OFF && \		  
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
 	ldconfig && \
     cd /code && \
@@ -199,20 +202,26 @@ RUN wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz && \
           -DBUILD_TESTING=OFF \
           -DENABLE_CURL=OFF \
           -DBUILD_PROJSYNC=OFF && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     ldconfig && \
     cd /code && rm -rf proj-${PROJ_VERSION} proj-${PROJ_VERSION}.tar.gz
 
 # Install the proj-data (grid and database files)
+# RUN wget https://download.osgeo.org/proj/proj-data-1.19.tar.gz && \
+#     wget https://download.osgeo.org/proj/proj-datumgrid-latest.tar.gz && \
+#     mkdir proj && \
+#     tar -xvf proj-data-1.19.tar.gz -C proj && \
+#     tar -xvf proj-datumgrid-latest.tar.gz -C proj && \
+#     cp -r proj/* ${INSTALL_PREFIX}/share/proj/ && \
+#     rm -rf proj proj-data-1.19.tar.gz proj-datumgrid-latest.tar.gz
 RUN wget https://download.osgeo.org/proj/proj-data-1.19.tar.gz && \
     wget https://download.osgeo.org/proj/proj-datumgrid-latest.tar.gz && \
-    mkdir proj && \
-    tar -xvf proj-data-1.19.tar.gz -C proj && \
-    tar -xvf proj-datumgrid-latest.tar.gz -C proj && \
-    cp -r proj/* ${INSTALL_PREFIX}/share/proj/ && \
-    rm -rf proj proj-data-1.19.tar.gz proj-datumgrid-latest.tar.gz
-    
+    mkdir -p ${INSTALL_PREFIX}/share/proj/ && \
+    tar -xvf proj-data-1.19.tar.gz -C ${INSTALL_PREFIX}/share/proj/ --strip-components=1 && \
+    tar -xvf proj-datumgrid-latest.tar.gz -C ${INSTALL_PREFIX}/share/proj/ --strip-components=1 && \
+    rm -rf proj-data-1.19.tar.gz proj-datumgrid-latest.tar.gz
+
 RUN ldconfig
 
 # libgeotiff
@@ -223,7 +232,7 @@ RUN git clone https://github.com/OSGeo/libgeotiff.git /tmp/libgeotiff && \
     cmake ../libgeotiff -GNinja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" && \
-    ninja && ninja install && \
+    ninja -j$(nproc) && ninja install && \
     cd /code && rm -rf /tmp/libgeotiff
     
 RUN ldconfig
@@ -238,7 +247,7 @@ RUN git clone --branch release/${GDAL_VERSION} https://github.com/OSGeo/gdal.git
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DBUILD_TESTING=OFF \        
           -DBUILD_APPS=OFF && \  
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && \
     rm -rf /tmp/gdal
@@ -254,7 +263,7 @@ RUN git clone --branch 3.4 https://gitlab.com/libeigen/eigen.git /tmp/eigen && \
           -DBUILD_TESTING=OFF \   
           -DEIGEN_BUILD_TESTING=OFF \  
           -DBUILD_APPS=OFF && \  
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && \
     rm -rf /tmp/eigen
@@ -283,7 +292,7 @@ RUN git clone https://ceres-solver.googlesource.com/ceres-solver /tmp/ceres-solv
           -DBUILD_TESTING=OFF \
           -DBUILD_EXAMPLES=OFF \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/ceres-solver
 	
@@ -302,7 +311,7 @@ RUN git clone https://github.com/CGAL/cgal.git /tmp/cgal && \
           -DWITH_demos=OFF \	
           -DWITH_examples=OFF \	
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
 	ldconfig && \
     cd /code && rm -rf /tmp/cgal
@@ -317,7 +326,7 @@ RUN git clone https://github.com/colmap/colmap.git /tmp/colmap && \
     cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CUDA_ARCHITECTURES="5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6" \ 
     -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-    && ninja -j2 && \
+    && ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/colmap
 
@@ -351,7 +360,7 @@ RUN git clone https://github.com/cdcseacave/openMVS.git /tmp/openMVS && \
              -DOpenMVS_MAX_CUDA_COMPATIBILITY=ON \
              -DBUILD_TESTING=OFF \
              -DBUILD_SHARED_LIBS=OFF && \
-    make -j2 && \
+    make -j$(nproc) && \
     make install && \
     cd /code && rm -rf /tmp/openMVS
 
@@ -361,7 +370,7 @@ RUN git clone https://github.com/hobuinc/laz-perf.git  /tmp/laz-perf && \
     cmake .. -GNinja  \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/laz-perf
 
@@ -372,7 +381,7 @@ RUN git clone https://github.com/RockRobotic/copc-lib.git  /tmp/copc-lib && \
     cmake .. -GNinja  \
              -DCMAKE_BUILD_TYPE=Release \
              -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/copc-lib
 
@@ -387,16 +396,9 @@ RUN wget https://github.com/LASzip/LASzip/archive/0069c42307183c49744f1eb170f703
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_STATIC_LIBS=OFF \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/laszip
-
-RUN apt-get update && apt-get install -y \
-    libssl-dev \
-    libcurl4-openssl-dev \ 
-    libzstd-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/PDAL/PDAL.git /tmp/PDAL && \
     cd /tmp/PDAL && \
@@ -410,7 +412,7 @@ RUN git clone https://github.com/PDAL/PDAL.git /tmp/PDAL && \
              -DWITH_LAZPERF=ON \
              -DWITH_GEOTIFF=ON \             
              -DWITH_TESTS=OFF && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/PDAL
 
@@ -431,7 +433,7 @@ RUN git clone --branch dev_3.2 https://github.com/TIDOP-USAL/tidoplib.git /tmp/t
           -DWITH_CUDA=ON \
           -DTIDOPLIB_USE_SIMD_INTRINSICS=ON \
           -DTIDOPLIB_CXX_STANDARD=C++14 && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/tidoplib		
 
@@ -445,7 +447,7 @@ RUN git clone https://github.com/connormanning/entwine /tmp/entwine && \
         -DWITH_TESTS=OFF \
         -DWITH_ZSTD=OFF \ 
         -DCMAKE_BUILD_TYPE=Release && \
-    ninja && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/entwine	
 
@@ -461,7 +463,7 @@ RUN git clone --branch dev https://github.com/TIDOP-USAL/graphos.git /tmp/grapho
           -DBUILD_TRANSLATION=OFF \
           -DBUILD_ORTHOPHOTO_COMPONENT=ON \
           -DWITH_CUDA=ON && \
-    ninja -j4 && \
+    ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/graphos
 
@@ -486,47 +488,72 @@ ENV PROJ_LIB=/usr/local/share/proj
 ENV GRAPHOS_PROJ=/usr/local/share/proj
 ENV GRAPHOS_GDAL=/usr/local/share/gdal
 
-RUN apt-get update && apt-get install -y \
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    libwebp-dev \
-    libboost-all-dev \
-    libsqlite3-dev \
-    libexpat1-dev \
-    libfreeimage-dev \
-    libflann-dev \
-    libmetis-dev \
-    libsuitesparse-dev \
-    libgflags-dev \
-    libglew-dev \
-    libgtk-3-dev \
-    libgmp-dev \
-    libmpfr-dev \
-    qtbase5-dev \
-    qttools5-dev \
-    qttools5-dev-tools \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libjpeg-turbo8 \
+    libpng16-16 \
+    libtiff5 \
+    libwebp6 \
+    libboost-system1.71.0 \
+    libboost-filesystem1.71.0 \
+    libboost-serialization1.71.0 \
+    libboost-iostreams1.71.0 \
+    libboost-program-options1.71.0 \
+    libsqlite3-0 \
+    libexpat1 \
+    libfreeimage3 \
+    libflann1.9 \
+    libmetis5 \
+    libsuitesparseconfig5 \
+    libcholmod3 \
+    libcxsparse3 \
+    libgflags2.2 \
+    libglew2.1 \
+    libgtk-3-0 \
+    libgmp10 \
+    libmpfr6 \
+    libqt5widgets5 \
+    libqt5gui5 \
+    libqt5core5a \
     qttranslations5-l10n \
-    libqt5opengl5-dev \
+    libqt5opengl5 \
+    libqt5sql5 \
+    libqt5sql5-sqlite \
     curl \
-    libhdf5-dev \
+    libhdf5-103 \
     python3 \
     python3-pip \
     python3-setuptools \
-    libgeotiff-dev \
-    libssl-dev \ 
-    libcurl4-openssl-dev \
-    libzstd-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    libgeotiff5 \
+    libssl1.1 \
+    libcurl4 \
+    libzstd1 \
+    unzip \
+    p7zip-full \
+    libopengl0 \
+    libglvnd0 \
+    libgl1 \
+    libglu1-mesa \    
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /code
 
-COPY --from=builder /code /code
-COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/bin/PoissonRecon /usr/local/bin/
+COPY --from=builder /usr/local/bin/SurfaceTrimmer /usr/local/bin/
+COPY --from=builder /usr/local/bin/colmap /usr/local/bin/
+COPY --from=builder /usr/local/bin/entwine /usr/local/bin/
+COPY --from=builder /usr/local/bin/graphos /usr/local/bin/
+COPY --from=builder /usr/local/bin/cameras_user.db /usr/local/bin/
+COPY --from=builder /usr/local/bin/cameras.db /usr/local/bin/
+COPY --from=builder /usr/local/bin/OpenMVS/ /usr/local/bin/OpenMVS/
+
+#COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /usr/local/lib/*.so* /usr/local/lib/
-COPY --from=builder /usr/local/share /usr/local/share
+COPY --from=builder /usr/local/share/proj /usr/local/share/proj
+COPY --from=builder /usr/local/share/gdal /usr/local/share/gdal
+#COPY --from=builder /usr/local/share /usr/local/share
 COPY graphos/proj/* /usr/local/share/proj/
+
+COPY --from=builder /code /code
 
 RUN ldconfig
 
@@ -542,17 +569,16 @@ COPY graphos/config.py /code/opendm
 
 RUN chmod +x /code/run.sh
 
-EXPOSE 3000
-
 WORKDIR /var/www
 COPY . /var/www
 
-
 RUN curl --silent --location https://deb.nodesource.com/setup_14.x | bash -
-RUN apt-get install -y nodejs unzip p7zip-full && npm install -g nodemon
+RUN apt-get install -y --no-install-recommends nodejs unzip p7zip-full && npm install -g nodemon
 RUN npm install --production && mkdir -p tmp
 
 RUN ln -s "$(which python3)" /usr/bin/python
 ENV python="$(which python3)"
+
+EXPOSE 3000
 
 ENTRYPOINT ["/usr/bin/node", "/var/www/index.js"]

@@ -325,13 +325,8 @@ if __name__ == '__main__':
     #app = ODMApp(args)
     #retcode = app.execute()
 
-    #project_dir = io.join_paths(args.project_path, args.name)
     project_dir = args.project_path
-    #print(project_dir)
     project_file = io.join_paths(project_dir, args.name + ".xml")
-    #image_dir = io.join_paths(project_dir, 'images')
-    #images_file = io.join_paths(args.project_path, "image_list.txt")
-    #gcp_dir = io.join_paths(project_dir, 'gcp')
 
     # Esto lo hacen en NodeMicMac. No se si hay forma de cambiar las rutas de los directorios para evitar la copia
     # create output directories (match ODM conventions for backward compatibility, even though this is MicMac)
@@ -353,13 +348,7 @@ if __name__ == '__main__':
         print("ERROR: Create GRAPHOS project")
         print(stderr)
 
-    #progressbc.send_update(1)
-
-    # Add images to project
-    #output_file = io.join_paths(project_dir, "image_list.txt")
-    #list_images(image_dir, output_file)
     stdout, stderr, retcode = add_images(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("image_manager", ["-p", project_file, "-l", output_file])
 
     if retcode == 0:
         print(stdout)
@@ -368,11 +357,8 @@ if __name__ == '__main__':
         print("ERROR: Add images to project")
         print(stderr)
 
-    #progressbc.send_update(5)
-
     # Features
     stdout, stderr, retcode = featextract(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("featextract", ["-p", project_file])
 
     if retcode == 0:
         print(stdout)
@@ -380,11 +366,8 @@ if __name__ == '__main__':
         print("ERROR: Features")
         print(stderr)
 
-    #progressbc.send_update(10)
-
     # Matching
     stdout, stderr, retcode = featmatch(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("featmatch", ["-p", project_file])
 
     if retcode == 0:
         print(stdout)
@@ -403,26 +386,6 @@ if __name__ == '__main__':
         print("ERROR: Load Ground Control Points")
         print(stderr)
 
-    #gcp_file = io.join_paths(gcp_dir, "gcp_list.txt")
-    #if os.path.isfile(gcp_file):
-    #    stdout, stderr, retcode = run_graphos_command("gcps", ["-p", project_file, "--cp", gcp_file])
-
-    #    if retcode == 0:
-    #        print(stdout)
-    #    else:
-    #        print("ERROR: Load Ground Control Points")
-    #        print(stderr)
-
-    #progressbc.send_update(16)
-
-    # Reconstruction
-    
-    #if os.path.isfile(gcp_file):
-    #    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
-    #else:
-    #    stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file])
-
-    #stdout, stderr, retcode = run_graphos_command("ori", ["-p", project_file, "-a"])
     stdout, stderr, retcode = ori(args, project_file, progressbc)
 
     if retcode == 0:
@@ -432,11 +395,8 @@ if __name__ == '__main__':
         print("ERROR: Reconstruction")
         print(stderr)
 
-    #progressbc.send_update(40)
-
     # Densification
     stdout, stderr, retcode = dense(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("dense", ["-p", project_file,  "--mvs:resolution_level", str(2)])
 
     if retcode == 0:
         print(stdout)
@@ -444,18 +404,8 @@ if __name__ == '__main__':
         print(stdout)
         print("ERROR: Densification")
         print(stderr)
-    
-    #progressbc.send_update(45)
-
-    # Exportar a las o laz en coordenadas UTM para que funcionen los postprocesos de NodeODM
-    # odm_georeferencing/odm_georeferenced_model.laz o odm_georeferencing/odm_georeferenced_model.las
-    # tambien valdría como ply georeferenciado "odm_filterpoints/point_cloud.ply"
-    # Por ahora se añade a odm_filterpoints/point_cloud.ply
-    #georeferencing_point_cloud = io.join_paths(project_dir, 'odm_filterpoints/point_cloud.ply')
-    #georeferencing_point_cloud = io.join_paths(project_dir, 'odm_georeferencing/odm_georeferenced_model.las')
 
     stdout, stderr, retcode = export_point_cloud(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("export_point_cloud", ["-p", project_file, "-f", georeferencing_point_cloud, "--save_colors", "--save_normals"])
 
     if retcode == 0:
         print(stdout)
@@ -463,12 +413,10 @@ if __name__ == '__main__':
         print(stdout)
         print("ERROR: Export point cloud")
         print(stderr)
-    
-    #progressbc.send_update(5)
+
     
     # Mesh 
     stdout, stderr, retcode = mesh(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("mesh", ["-p", project_file, "--depth", str(11)])
 
     if retcode == 0:
         print(stdout)
@@ -477,11 +425,8 @@ if __name__ == '__main__':
         print("ERROR: Mesh")
         print(stderr)
 
-    #progressbc.send_update(70)
-
     # DEM
     stdout, stderr, retcode = dem(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("dem", ["-p", project_file, "--gsd", str(0.1)])
 
     if retcode == 0:
         print(stdout)
@@ -494,11 +439,8 @@ if __name__ == '__main__':
     odm_dem = io.join_paths(project_dir, 'odm_dem')
     shutil.copy(io.join_paths(dem_path, 'dsm.tif'), odm_dem)
 
-    #progressbc.send_update(80)
-
     # Ortho
     stdout, stderr, retcode = ortho(args, project_file, progressbc)
-    #stdout, stderr, retcode = run_graphos_command("ortho", ["-p", project_file, "--gsd", str(0.05)])
 
     if retcode == 0:
         print(stdout)
@@ -512,7 +454,6 @@ if __name__ == '__main__':
     odm_ortho_path = io.join_paths(odm_ortho_dir, 'odm_orthophoto.tif')
     shutil.copy(io.join_paths(ortho_path, 'ortho.tif'), odm_ortho_path)
 
-    #progressbc.send_update(90)
 
     if retcode == 0:
         save_opts(opts_json, args)
