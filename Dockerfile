@@ -564,6 +564,7 @@ RUN pip install -r /code/requirements.txt
 COPY graphos/VERSION /code
 COPY graphos/run.sh /code
 COPY graphos/run.py /code
+COPY graphos/export_cameras.py /code
 COPY graphos/config.py /code/opendm
 #COPY graphos/odm_options.json /code
 

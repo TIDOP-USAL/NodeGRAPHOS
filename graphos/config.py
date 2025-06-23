@@ -23,7 +23,7 @@ rerun_stages = {
     'mesh': 'mesh',
     'dem': 'dem',
     'ortho': 'ortho',
-    '3d_tiles': 'odm_postprocess',
+    #'3d_tiles': 'odm_postprocess',
     # 'align': 'odm_georeferencing',
     # 'auto_boundary': 'odm_filterpoints',
     # 'auto_boundary_distance': 'odm_filterpoints',
