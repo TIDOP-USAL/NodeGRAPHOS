@@ -477,6 +477,7 @@ def config(argv=None, parser=None):
     
     parser.add_argument('--save-normals',
                         action=StoreTrue, 
+                        nargs=0,
                         default=True,
                         help='Export normals for point cloud. Default: %(default)s')
 

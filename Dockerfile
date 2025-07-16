@@ -452,8 +452,9 @@ RUN git clone https://github.com/connormanning/entwine /tmp/entwine && \
     cd /code && rm -rf /tmp/entwine	
 
 # Build and install graphos
-RUN git clone --branch dev https://github.com/TIDOP-USAL/graphos.git /tmp/graphos && \
+RUN git clone https://github.com/TIDOP-USAL/graphos.git /tmp/graphos && \
     cd /tmp/graphos && \
+    git checkout f6031ed529add8c104cd64c655419530672e5ec1 && \
     mkdir build && \
     cd build && \
     cmake .. -GNinja  \
