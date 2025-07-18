@@ -21,11 +21,12 @@ ARG GDAL_VERSION=3.5
 ARG PROJ_VERSION=9.0.0
 ARG GLOG_VERSION=0.5.0
 ARG OPENMVS_VERSION=2.2.0
-
+ARG WITH_CUDA=OFF
 ARG INSTALL_PREFIX=/usr/local
 
 ENV PKG_CONFIG_PATH=${INSTALL_PREFIX}/lib/pkgconfig
 ENV LD_LIBRARY_PATH=${INSTALL_PREFIX}/lib
+ENV WITH_CUDA=${WITH_CUDA}
 
 # Sets the working directory
 WORKDIR /code
@@ -87,7 +88,7 @@ RUN git clone --branch ${OPENCV_VERSION} https://github.com/opencv/opencv.git /t
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv_contrib/modules \
-          -DWITH_CUDA=ON \
+          -DWITH_CUDA=${WITH_CUDA} \
           -DCUDA_ARCH_BIN="5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6" \
           -DCUDA_ARCH_PTX="" \
           -DENABLE_FAST_MATH=OFF \
@@ -324,6 +325,7 @@ RUN git clone https://github.com/colmap/colmap.git /tmp/colmap && \
     mkdir build && \
     cd build && \
     cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
+    -DCUDA_ENABLED=${WITH_CUDA} \
     -DCMAKE_CUDA_ARCHITECTURES="5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6" \ 
     -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
     && ninja -j$(nproc) && \
@@ -356,6 +358,7 @@ RUN git clone https://github.com/cdcseacave/openMVS.git /tmp/openMVS && \
     cmake .. -DCMAKE_BUILD_TYPE=Release \
              -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
              -DVCG_DIR="${INSTALL_PREFIX}/vcglib" \	
+             -DOpenMVS_USE_CUDA=${WITH_CUDA} \
              -DCUDA_CUDA_LIBRARY=/usr/local/cuda-11.5/lib64/stubs/libcuda.so \			 
              -DOpenMVS_MAX_CUDA_COMPATIBILITY=ON \
              -DBUILD_TESTING=OFF \
@@ -430,7 +433,7 @@ RUN git clone --branch dev_3.2 https://github.com/TIDOP-USAL/tidoplib.git /tmp/t
           -DBUILD_APPS=OFF \
           -DBUILD_TEST=OFF \
           -DBUILD_DOC=OFF \
-          -DWITH_CUDA=ON \
+          -DWITH_CUDA=${WITH_CUDA} \
           -DTIDOPLIB_USE_SIMD_INTRINSICS=ON \
           -DTIDOPLIB_CXX_STANDARD=C++14 && \
     ninja -j$(nproc) && \
@@ -454,7 +457,7 @@ RUN git clone https://github.com/connormanning/entwine /tmp/entwine && \
 # Build and install graphos
 RUN git clone https://github.com/TIDOP-USAL/graphos.git /tmp/graphos && \
     cd /tmp/graphos && \
-    git checkout f6031ed529add8c104cd64c655419530672e5ec1 && \
+    git checkout b1cf7c757f23d80db41a30f2e4fcdbf26f5aa425 && \
     mkdir build && \
     cd build && \
     cmake .. -GNinja  \
@@ -463,7 +466,7 @@ RUN git clone https://github.com/TIDOP-USAL/graphos.git /tmp/graphos && \
           -DBUILD_GUI=OFF \
           -DBUILD_TRANSLATION=OFF \
           -DBUILD_ORTHOPHOTO_COMPONENT=ON \
-          -DWITH_CUDA=ON && \
+          -DWITH_CUDA=${WITH_CUDA} && \
     ninja -j$(nproc) && \
     ninja install && \
     cd /code && rm -rf /tmp/graphos
@@ -573,6 +576,8 @@ RUN chmod +x /code/run.sh
 
 WORKDIR /var/www
 COPY . /var/www
+
+RUN chmod +x /var/www/scripts/postprocess.sh
 
 RUN curl --silent --location https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y --no-install-recommends nodejs unzip p7zip-full && npm install -g nodemon
